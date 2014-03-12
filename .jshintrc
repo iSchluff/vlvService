@@ -1,0 +1,12 @@
+{
+  "devel": true,
+  "node": true,
+  "curly": true,
+  "latedef": true,
+  "newcap": true,
+  "eqeqeq": true,
+  "immed": true,
+  "unused": true,
+  "multistr": true,
+  "globals": { "MY_GLOBAL": false }
+}

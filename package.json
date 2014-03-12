@@ -1,0 +1,11 @@
+{
+  "name": "vlvservice",
+  "description": "Webservice for TU-Ilmenau VLV",
+  "version": "0.0.1",
+  "dependencies": {
+    "pg": "~2",
+    "q": "~1",
+    "lodash": "~2",
+    "hapi": "~2"
+  }
+}
