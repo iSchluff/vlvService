@@ -4,7 +4,7 @@ var vlv= require("./vlv.js");
 var data= require("./processEvents.js");
 var routes= require("./routes.js");
 
-var server = hapi.createServer('localhost', 3000);
+var server = hapi.createServer('localhost', 3000, {cors: true});
 
 var defaultResponse= function(result, reply){
   result.then(function(result){
@@ -17,8 +17,7 @@ var defaultResponse= function(result, reply){
 };
 
 // Add the route
-server.route([
-{
+server.route([{
   method: 'GET',
   path: '/majors/{id?}',
   handler: function(req, reply) {
@@ -43,7 +42,7 @@ server.route([
   }
 },{
   method: 'GET',
-  path: '/events/{id?}',
+  path: '/events/{id}',
   handler: function(req, reply) {
     var result= data.queryDB({
       name: "getEvent",
@@ -65,7 +64,7 @@ server.route([
     if(req.query.date){
       result= data.queryDB({
         name: "getMajorEventsOnDay",
-        text: "SELECT c.name, c.lecturer, e.type, e.location, e.note, d.startTime, d.endTime\
+        text: "SELECT c.name, c.lecturer, e.id, e.type, e.location, e.note, d.startTime, d.endTime\
           FROM majors m\
           JOIN eventMajors em ON em.majorId = m.id\
           JOIN events e ON e.id = em.eventId\
@@ -97,7 +96,7 @@ server.route([
     validate: {
       query:{
         date: hapi.types.date()
-      } 
+      }
     }
   },
 },{
@@ -117,7 +116,7 @@ server.route([
         return data.saveEvents(d);
       })
       .then(function(){
-        reply("Updated Database: "+new Date().getTime() - t+ " ms \n");
+        reply("Updated Database: "+ (new Date().getTime() - t) + " ms \n");
       })
       .fail(function(error){
         console.error(error);
@@ -130,5 +129,3 @@ server.route([
 // Start the server
 server.start();
 console.log("Started Server on Port 3000");
-
-

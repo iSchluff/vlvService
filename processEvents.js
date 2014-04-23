@@ -3,6 +3,8 @@ Q= require("q"),
 //_= require("lodash"),
 conString = "postgres://postgres:erbse@localhost/testdb";
 
+var localTime= new Date();
+
 Date.prototype.getWeek = function() {
   var fjan = new Date(this.getFullYear(), 0, 4);
   return Math.ceil((((this - fjan) / 86400000) + fjan.getDay()+1)/7);
@@ -46,7 +48,7 @@ var matchDate = function(string, day, year){
 var processDate= function(dateString, dayString){
   var timespans= [],
   note= "";
-  
+
   // try to match dd.mm.yyyy dates
   var dateMatch= dateString.match(/(\d{2})\.(\d{2})\.(\d{4})/);
   if(dateMatch){
@@ -54,20 +56,20 @@ var processDate= function(dateString, dayString){
 
   // try to match complex timespans (xx. KW)
   }else if(dateString.indexOf(".") !== -1){
-   
+
     // check for U or G weeks
     var match= dateString.match(/^(?:(U|G)).+/);
     var recurring= match ? 2: 1;
     if(match){
       dateString= dateString.slice(3, -1);
     }
-    
+
     // split by ';' and ',' and then by '-'
     var commaSplit= dateString.split(/[,;] /);
-    
+
     for(var i=0; i < commaSplit.length; i++){
       var hyphenSplit= commaSplit[i].split(/(?: |)- /);
-      
+
       // extract week / years from parts
       var dates=[];
 
@@ -75,11 +77,19 @@ var processDate= function(dateString, dayString){
       if(hyphenSplit.length <= 2){
         for(var j=0; j < hyphenSplit.length; j++){
           var yearMatch= hyphenSplit[j].match(/(\d{4})/);
-          for(var x= i; yearMatch === null && x<commaSplit.length; x++){
+          for(var x= i; yearMatch === null && x < commaSplit.length; x++){
             yearMatch= commaSplit[x].match(/(\d{4})/);
           }
-          
-          if(yearMatch === null){ return new Error("Missing Year -> "+ dateString); }
+
+          if(yearMatch === null){
+            if(localTime.getMonth() > 2 && localTime.getMonth() < 9){ //sommersemester
+
+              yearMatch= [, localTime.getFullYear()];
+            }else{
+              return new Error("Missing Year -> "+ dateString);
+            }
+          }
+
           var m= matchDate(hyphenSplit[j], dayString, yearMatch[1]);
           if(m instanceof Error){ return m; }
           dates.push(m);
@@ -87,21 +97,21 @@ var processDate= function(dateString, dayString){
       }else if(hyphenSplit.length === 3){
         var m1= matchDate(hyphenSplit[0], dayString);
         if(m1 instanceof Error){ return m1; }
-        
+
         var m2= matchDate(hyphenSplit[2], dayString);
         if(m2 instanceof Error){ return m2; }
-        
+
         dates.push(m1, m2);
-        
+
       }else{
         return new Error("Couldn't parse Timespan -> " + commaSplit[i]);
       }
-      
+
       if(dates.length>2){
         console.log("-----------",dateString,"-------", split.length);
         console.log(dates);
       }
-      
+
       if(dates.length>1){ dates.push(recurring); }
       timespans.push(dates);
     }
@@ -134,7 +144,7 @@ var processTimes= function(timeString){
 var processEvent = function(event){
   var dates= processDate(event.date, event.day);
   if(dates instanceof Error){ return dates; }
-  
+
   var times= processTimes(event.timespan);
   if(times instanceof Error){ return times; }
 
@@ -142,7 +152,7 @@ var processEvent = function(event){
   return {
     courseName: event.name,
     courseLecturer: event.lecturer,
-    
+
     data: {
       type: event.type,
       location: event.location,
@@ -159,20 +169,22 @@ exports.processEvents= function(events){
   var data= [],
   course= {},
   first= true;
-  
+
+  localTime= new Date();
+
   console.time("processEvents");
-  
+
   for(var i=0; i<events.length; i++){
     var event= processEvent(events[i]);
-    
+
     if(event instanceof Error){
       console.error(event);
       console.log(events[i]);
       continue;
     }
-    
+
 //    fsJoin.push.apply(fsJoin, event.data.fs)
-    
+
     // accumulate events of the same events to one dataset
     // Assumption: sorted events
     if(event.courseName !== course.name){
@@ -189,9 +201,9 @@ exports.processEvents= function(events){
     }
     course.events.push(event.data);
   }
-  
+
   data.push(course);
-  
+
   console.timeEnd("processEvents");
 //  console.log("huhu",fsJoin.length);
   return data;
@@ -223,7 +235,7 @@ var query= function(client, prepared){
 exports.saveEvents= function(data){
   var deferred= Q.defer();
   var client = new pg.Client(conString);
-  
+
   // connect to postgres
   client.connect(function(err) {
     if(err) {
@@ -231,12 +243,12 @@ exports.saveEvents= function(data){
       return console.error('could not connect to postgres', err);
     }
     console.log("connected to db");
-    
+
     var insertDates= function(eventResult){
       var eventId= eventResult.value.rows[0].id,
       event= eventResult.ref,
       results= [];
-      
+
       event.dates.forEach(function(date){
         if(typeof date === "string"){
           date= [date];
@@ -254,11 +266,11 @@ exports.saveEvents= function(data){
       });
       return Q.all(results);
     };
-    
+
     var insertEventMajors= function(majorResult){
       var majorId= majorResult.value.rows[0].id,
       event= majorResult.ref;
-      
+
       var result= query.call(event, client, {
         name: "insertEventMajor",
         text: "INSERT INTO\
@@ -266,17 +278,17 @@ exports.saveEvents= function(data){
                VALUES($1, $2)",
         values: [event.id, majorId],
       });
-      
+
       return result;
     };
-    
+
     var insertMajors= function(eventResult){
       var eventId= eventResult.value.rows[0].id,
       event= eventResult.ref,
       results= [];
-      
+
       event.id= eventId;
-      
+
       event.fs.forEach(function(major){
         var result= query.call(event, client, {
           name: "insertMajor",
@@ -302,12 +314,12 @@ exports.saveEvents= function(data){
       });
       return Q.all(results);
     };
-    
+
     var onEventInsert= function(eventResult){
       var results= [insertDates(eventResult), insertMajors(eventResult)];
       return Q.all(results);
     };
-    
+
     var insertEvents= function(courseResult){
       var courseId= courseResult.value.rows[0].id,
       course= courseResult.ref,
@@ -327,7 +339,7 @@ exports.saveEvents= function(data){
       });
       return Q.all(results);
     };
-    
+
     var insertCourses= function(){
       var results= [];
       data.forEach(function(course){
@@ -344,8 +356,14 @@ exports.saveEvents= function(data){
       });
       return Q.all(results);
     };
-    
-    insertCourses()
+
+    query(client, {
+      name: "clearTables",
+      text: "TRUNCATE courses, majors RESTART IDENTITY CASCADE"
+    }).then(function(){
+      console.log("cleared db");
+      return insertCourses();
+    })
     .then(function(){
       console.log("disconnecting from db");
       client.end();
@@ -357,18 +375,18 @@ exports.saveEvents= function(data){
       deferred.reject("Failed running Query");
     });
   });
-  
+
   return deferred.promise;
 };
 
 exports.queryDB= function(queryObject){
   var client = new pg.Client(conString);
   var deferred= Q.defer();
-  
+
   // connect to postgres
   client.connect(function(err) {
     if(err) { return console.error('could not connect to postgres', err); }
-    
+
     query(client, queryObject)
     .then(function(result){
       client.end();
@@ -379,6 +397,6 @@ exports.queryDB= function(queryObject){
       deferred.reject(new Error('Failed running query - '+ err));
     });
   });
-  
+
   return deferred.promise;
 };
