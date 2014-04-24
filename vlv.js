@@ -195,7 +195,7 @@ exports.getEvents = function(){
   console.time("getHtml");
   // build url with get parameters, % suchen für alle ergebnisse
   // sommer    http://wcms3.rz.tu-ilmenau.de/~goettlich/elvvi/sommer/list/fachsuch_so.php?suchfach=%
-  var dataURL= url.parse("http://local/vlvSommer.html");
+  var dataURL= url.parse("http://localhost/vlvSommer.html");
   var options= {
     hostname: dataURL.hostname,
     path: dataURL.path,
