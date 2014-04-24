@@ -104,6 +104,10 @@ server.route([{
     method: 'GET',
     path: '/update',
     handler: function (request, reply) {
+      if(request.info.remoteAddress !== "127.0.0.1"){
+        var error = Hapi.error.forbidden('Not for You');
+        return reply(error);
+      }
 
       var t= new Date().getTime();
       // load data from vlv and store in db
