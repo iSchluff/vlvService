@@ -1,7 +1,7 @@
 var pg = require('pg').native,
 Q= require("q"),
 //_= require("lodash"),
-conString = "postgres://postgres:erbse@localhost/testdb";
+conString = "postgres://foo:bar@localhost/testdb";
 
 var localTime= new Date();
 
