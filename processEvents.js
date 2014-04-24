@@ -1,7 +1,7 @@
 var pg = require('pg').native,
 Q= require("q"),
+config= require("./config.js");
 //_= require("lodash"),
-conString = "postgres://foo:bar@localhost/testdb";
 
 var localTime= new Date();
 
@@ -234,7 +234,7 @@ var query= function(client, prepared){
 // send formatted events to postgres
 exports.saveEvents= function(data){
   var deferred= Q.defer();
-  var client = new pg.Client(conString);
+  var client = new pg.Client(config.pgString);
 
   // connect to postgres
   client.connect(function(err) {
@@ -380,7 +380,7 @@ exports.saveEvents= function(data){
 };
 
 exports.queryDB= function(queryObject){
-  var client = new pg.Client(conString);
+  var client = new pg.Client(config.pgString);
   var deferred= Q.defer();
 
   // connect to postgres
