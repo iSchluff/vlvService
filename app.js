@@ -3,8 +3,9 @@ var hapi = require('hapi');
 var vlv= require("./vlv.js");
 var data= require("./processEvents.js");
 var routes= require("./routes.js");
+var config= require("./config.js");
 
-var server = hapi.createServer('localhost', 3000, {cors: true});
+var server = hapi.createServer(config.hostString, 3000, {cors: true});
 
 var defaultResponse= function(result, reply){
   result.then(function(result){
