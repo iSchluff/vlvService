@@ -32,7 +32,7 @@ var toDay= function(s){
 
 // convert calendar-week notation to dates
 var matchDate = function(string, day, year){
-  var weekMatch= string.match(/(\d{1}|\d{2})(\.|)/);
+  var weekMatch= string.match(/(\d{1,2})(\.|)/);
   if(weekMatch=== null){
     return new Error("Can't match week! str: " +string+
                      " matches: " +weekMatch);
